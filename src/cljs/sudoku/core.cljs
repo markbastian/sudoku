@@ -35,7 +35,7 @@
      [:h4 (str "Score: " score)]
      [:h4 (str "High Score: " high-score)]
 
-     ;[:button #(prn (with-out-str (pprint state))) "dump state"]
+     [:button #(prn "Hi") "solve"]
      ]))
 
 
