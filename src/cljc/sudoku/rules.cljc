@@ -33,11 +33,12 @@
    (some #(when (apply = %) (first %))
          (partition 2 (iterate #(reduce simplify % all-coords) board)))))
 
+(defn expand [board cell]
+  (map #(assoc-in board cell %) (get-in board cell)))
+
 (defn neighbors [board]
   (let [most-constrained (apply min-key #(count (get-in board %)) (unknowns board))]
-    (filter (complement invalid?)
-            (map #(simplify (assoc-in board most-constrained %))
-                 (get-in board most-constrained)))))
+    (filter (complement invalid?) (map simplify (expand board most-constrained)))))
 
 (defn solve [board]
   (let [start (simplify (initialize board))]
