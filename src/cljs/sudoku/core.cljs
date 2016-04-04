@@ -12,26 +12,9 @@
 (println "Edits to this text should show up in your developer console.")
 
 (defn render [state]
-  (let [cell-dim 20
-        {:keys [puzzle]} @state]
+  (let [{:keys [puzzle]} @state]
     [:div
-     [:h1 "sudoku"]
-     [:svg {:width (* cell-dim 9) :height (* cell-dim 9)}
-      (doall (for [i (range 9) j (range 9)]
-               [:rect { :key (str "box:" i ":" j) :x (* i cell-dim) :y (* j cell-dim)
-                       :width cell-dim :height cell-dim :stroke :black :fill :white }]))
-      (doall (for [row (range 9) col (range 9)
-                   :let [n (get-in puzzle [row col])]
-                   :when (number? n)]
-               [:text { :key (str row "t:" col)
-                       :x (+ (* col cell-dim) (/ cell-dim 2))
-                       :y (- (* (inc row) cell-dim) (/ cell-dim 4))
-                       :text-anchor :middle
-                       :fill :blue } n]))]
-     [:div]
-     [:div                                                  ; {#js :style { :width :100% }}
-      [:button {:on-click #(time (swap! state update :puzzle rules/solve)) }
-      "solve"]]
+     [:h1 "Sudoku Solver"]
      [:table
       (doall
         (for [row (range 9)]
@@ -40,38 +23,27 @@
              (for [col (range 9)
                    :let [n (get-in puzzle [row col])]]
                [:td {:key (str "cell:" row ":" col)
-                     :style
-                          {:width :2em
-                           :height :2em}}
-                (cond (number? n) n
-                      (empty? n) "X"
-                  :default [:select {:on-change
-                            (fn [e]
-                              (let [s (-> e .-target .-value read-string)]
-                                (pprint (swap!
-                                          state
-                                          #(-> %
-                                               (update :history conj puzzle)
-                                               (assoc-in [:puzzle row col] s)
-                                               (update :puzzle rules/simplify))))))
-                             :style
-                            {:width :100%
-                             :height :100%}}
-                   [:option {:value :nil}]
-                   (for [c n]
-                     [:option {:key (str "choice:" row ":" col ":" c)
-                               :value c} c])])]))]))]
+                     :style {:width :2em :height :2em}}
+                [:input {:type :number
+                         :min 1 :max 9 :value n
+                         :on-change #(swap! state assoc-in [:puzzle row col]
+                                            (-> % .-target .-value read-string))}]]))]))]
      [:div
-      [:button {:on-click #(swap! state
-                                  (fn [{:keys [history] :as s}]
-                                    (cond-> (assoc s :puzzle (peek history))
-                                            (> (count history) 1)
-                                            (update :history pop)))) }
-       "undo"]]
+      [:button {:on-click #(if-let [solution (rules/solve puzzle)]
+                            (swap! state assoc :puzzle solution)
+                            (js/alert "Current puzzle is unsolvable.")) }
+       "Solve"]]
+     [:div
+      [:button {:on-click #(swap! state assoc :puzzle ex/easy) }
+       "Reset"]]
+     [:div
+      [:button {:on-click #(swap! state assoc :puzzle
+                                  (vec (take 10 (repeat (vec (take 10 (repeat nil))))))) }
+       "Clear"]]
      ]))
 
 (when-let [app-context (. js/document (getElementById "app"))]
-  (let [initial-value ex/hard
+  (let [initial-value ex/hardest
         state (atom {:puzzle initial-value
                      :history [initial-value] })]
   (reagent/render-component [render state] app-context)))

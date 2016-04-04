@@ -12,25 +12,21 @@
                   [a b])))]
     (zipmap all-cells (map #(disj (reduce into #{} (cells %)) %) all-cells))))
 
-(defn all-unknowns [board] (remove (partial get-in board) all-cells))
-
-(defn locked [board cell]
-  (disj (apply hash-set (map (partial get-in board) (neighbors cell))) nil))
-
 (defn constraints [[board unsolved-cells]]
-  (->> unsolved-cells
-       (map (fn [c] [c (remove (locked board c) (map inc (range 9)))]))
-       (group-by (comp count second))))
+  (letfn [(solved [cell] (apply hash-set (map (partial get-in board) (neighbors cell))))]
+    (->> unsolved-cells
+       (map (fn [c] [c (remove (solved c) (map inc (range 9)))]))
+       (group-by (comp count second)))))
 
 (defn lock-cells [[board unsolved-cells] [cell values]]
   (map (fn [value] [(assoc-in board cell value) (disj unsolved-cells cell)]) values))
 
 (defn solve [initial-board]
-  (loop [[[board unsolved-cells :as f] & r]
-         [[initial-board (apply hash-set (all-unknowns initial-board))]]]
+  (let [all-unknowns (apply hash-set (remove (partial get-in initial-board) all-cells))]
+    (loop [[[board unsolved-cells :as f] & r] [[initial-board all-unknowns]]]
     (if-not (empty? unsolved-cells)
       (recur (into r (lock-cells f (first (some (constraints f) (range))))))
-      board)))
+      board))))
 
 (defn valid-cell? [board cell]
   (not-any? #{(get-in board cell)}
@@ -43,4 +39,4 @@
 (defn valid-board? [board]
   (and
     (every? (partial get-in board) all-cells)
-    (-> board bad-cells empty?)))
+    (empty? (bad-cells board))))
