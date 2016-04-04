@@ -71,7 +71,7 @@
      ]))
 
 (when-let [app-context (. js/document (getElementById "app"))]
-  (let [initial-value (rules/simplify (rules/initialize ex/hard))
+  (let [initial-value ex/hard
         state (atom {:puzzle initial-value
                      :history [initial-value] })]
   (reagent/render-component [render state] app-context)))

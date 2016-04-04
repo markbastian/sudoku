@@ -1,56 +1,46 @@
-(ns sudoku.rules
-  (:require #?(:clj [clojure.pprint :refer [pprint]]
-               :cljs [cljs.pprint :refer [pprint]])))
+(ns sudoku.rules)
 
-(defonce all (set (map inc (range 9))))
-(defonce all-coords (for [i (range 9) j (range 9)] [i j]))
-(defn initialize [board] (mapv (fn [row] (mapv #(or % all) row)) board))
+(defonce all-cells (for [i (range 9) j (range 9)] [i j]))
 
-(defn solved? [board] (every? #(number? (get-in board %)) all-coords))
-(defn unknowns [board] (filter #(set? (get-in board %)) all-coords))
-(defn invalid? [board] (some #(= #{} (get-in board %)) all-coords))
+(defonce neighbors
+  (let [cells
+        (juxt
+          #(map (fn [i] [i (second %)]) (range 9))
+          #(map (fn [j] [(first %) j]) (range 9))
+          #(for [a (range 3) b (range 3)]
+            (mapv + [(* 3 (quot (first %) 3)) (* 3 (quot (second %) 3))]
+                  [a b])))]
+    (zipmap all-cells (map #(disj (reduce into #{} (cells %)) %) all-cells))))
 
-(defn row [[_ j]] (mapv (fn [i] [i j]) (range 9)))
-(defn col [[i _]] (mapv (fn [j] [i j]) (range 9)))
-(defn sector [[i j]]
-  (for [a (range 3) b (range 3)]
-    (mapv + [(* 3 (quot i 3)) (* 3 (quot j 3))] [a b])))
+(defn all-unknowns [board] (remove (partial get-in board) all-cells))
 
-(defn sphere-of-influence [c]
-  (reduce into #{} ((juxt row col sector) c)))
+(defn locked [board cell]
+  (disj (apply hash-set (map (partial get-in board) (neighbors cell))) nil))
 
-(defonce sois (into {} (for [row (range 9) col (range 9) :let [c [row col]]]
-                         [c (disj (sphere-of-influence c) c)])))
+(defn constraints [[board unsolved-cells]]
+  (->> unsolved-cells
+       (map (fn [c] [c (remove (locked board c) (map inc (range 9)))]))
+       (group-by (comp count second))))
 
-(defn remove-value [v b c]
-  (if (number? (get-in b c)) b (update-in b c disj v)))
+(defn lock-cells [[board unsolved-cells] [cell values]]
+  (map (fn [value] [(assoc-in board cell value) (disj unsolved-cells cell)]) values))
 
-(defn simplify
-  ([board c]
-  (let [v (get-in board c)]
-    (cond
-      (number? v)
-      (reduce (partial remove-value v) board (sois c))
-      (== 1 (count v)) (simplify (assoc-in board c (first v)) c)
-      :else board)))
-  ([board]
-   (some #(when (apply = %) (first %))
-         (partition 2 (iterate #(reduce simplify % all-coords) board)))))
+(defn solve [initial-board]
+  (loop [[[board unsolved-cells :as f] & r]
+         [[initial-board (apply hash-set (all-unknowns initial-board))]]]
+    (if-not (empty? unsolved-cells)
+      (recur (into r (lock-cells f (first (some (constraints f) (range))))))
+      board)))
 
-(defn expand [board cell]
-  (map #(assoc-in board cell %) (get-in board cell)))
+(defn valid-cell? [board cell]
+  (not-any? #{(get-in board cell)}
+            (map (partial get-in board)
+                 (neighbors cell))))
 
-(defn neighbors [board]
-  (let [most-constrained (apply min-key #(count (get-in board %)) (unknowns board))]
-    (filter (complement invalid?) (map simplify (expand board most-constrained)))))
+(defn bad-cells [board]
+  (remove (partial valid-cell? board) all-cells))
 
-(defn solve [board]
-  (let [start (simplify (initialize board))]
-    (if (solved? start)
-      start
-      (some (fn [s] (if (empty? s) :no-solution
-                        (some #(when (solved? %) %) s)))
-            (iterate #(mapcat neighbors %) [start])))))
-
-
-
+(defn valid-board? [board]
+  (and
+    (every? (partial get-in board) all-cells)
+    (-> board bad-cells empty?)))

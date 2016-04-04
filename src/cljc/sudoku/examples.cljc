@@ -57,3 +57,29 @@
    [nil nil 6 nil 7 nil nil nil 4]
    [nil nil nil nil 1 nil 2 nil nil]])
 
+
+;http://puzzling.stackexchange.com/questions/252/how-do-i-solve-the-worlds-hardest-sudoku
+;http://www.telegraph.co.uk/news/science/science-news/9359579/Worlds-hardest-sudoku-can-you-crack-it.html
+(def hardest
+  [[8 nil nil nil nil nil nil nil nil]
+   [nil nil 3 6 nil nil nil nil nil]
+   [nil 7 nil nil 9 nil 2 nil nil]
+   [nil 5 nil nil nil 7 nil nil nil]
+   [nil nil nil nil 4 5 7 nil nil]
+   [nil nil nil 1 nil nil nil 3 nil]
+   [nil nil 1 nil nil nil nil 6 8]
+   [nil nil 8 5 nil nil nil 1 nil]
+   [nil 9 nil nil nil nil 4 nil nil]])
+
+;https://www.kristanix.com/sudokuepic/worlds-hardest-sudoku.php
+(def al-escargot
+  [[1 nil nil nil nil 7 nil 9 nil]
+   [nil 3 nil nil 2 nil nil nil 8]
+   [nil nil 9 6 nil nil 5 nil nil]
+   [nil nil 5 3 nil nil 9 nil nil]
+   [nil 1 nil nil 8 nil nil nil 2]
+   [6 nil nil nil nil 4 nil nil nil]
+   [3 nil nil nil nil nil nil 1 nil]
+   [nil 4 nil nil nil nil nil nil 7]
+   [nil nil 7 nil nil nil 3 nil nil]])
+
