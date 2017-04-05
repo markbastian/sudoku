@@ -1,5 +1,7 @@
 (ns sudoku.rules)
 
+(def valid-values (apply hash-set (range 1 10)))
+
 (defonce all-cells (for [i (range 9) j (range 9)] [i j]))
 
 (defonce neighbors
@@ -12,21 +14,26 @@
                   [a b])))]
     (zipmap all-cells (map #(disj (reduce into #{} (cells %)) %) all-cells))))
 
-(defn constraints [[board unsolved-cells]]
-  (letfn [(solved [cell] (apply hash-set (map (partial get-in board) (neighbors cell))))]
-    (->> unsolved-cells
-       (map (fn [c] [c (remove (solved c) (map inc (range 9)))]))
-       (group-by (comp count second)))))
+(defn lock-cell [[board unknowns] cell v]
+  [(assoc-in board cell v)
+   (reduce (fn [u n] (cond-> u (u n) (update n disj v)))
+           (dissoc unknowns cell) (neighbors cell))])
 
-(defn lock-cells [[board unsolved-cells] [cell values]]
-  (map (fn [value] [(assoc-in board cell value) (disj unsolved-cells cell)]) values))
+(defn initialize [b]
+  (reduce
+    (fn [u c] (if-let[v (valid-values (get-in b c))] (lock-cell u c v) u))
+    [b (zipmap all-cells (repeat valid-values))] all-cells))
 
-(defn solve [initial-board]
-  (let [all-unknowns (apply hash-set (remove (partial get-in initial-board) all-cells))]
-    (loop [[[board unsolved-cells :as f] & r] [[initial-board all-unknowns]]]
-    (if-not (empty? unsolved-cells)
-      (recur (into r (lock-cells f (first (some (constraints f) (range))))))
-      board))))
+(defn solve-step [[_ unknowns :as soln]]
+  (let [[best-cell best-values] (apply min-key (comp count val) unknowns)]
+    (for [v best-values] (lock-cell soln best-cell v))))
+
+(defn solve [board]
+  (loop [[[board unknowns :as f] & r] [(initialize board)]]
+    (cond
+      (and (empty? unknowns) (every? #(every? integer? %) board)) board
+      (nil? f) f
+      :default (recur (into r (solve-step f))))))
 
 (defn valid-cell? [board cell]
   (not-any? #{(get-in board cell)}

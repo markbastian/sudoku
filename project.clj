@@ -4,25 +4,25 @@
   :url "https://github.com/markbastian/sudoku"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.7.0"]
-                 [org.clojure/clojurescript "1.7.228"]
-                 [quil "2.3.0"]
-                 [reagent "0.5.1"]
-                 [org.clojure/core.async "0.2.374"
-                  :exclusions [org.clojure/tools.reader]]
-                 [cljsjs/hammer "2.0.4-5"]]
+  :dependencies [[org.clojure/clojure "1.8.0"]
+                 [org.clojure/clojurescript "1.9.495"]
+                 [reagent "0.6.1"]]
 
-  :plugins [[lein-ancient "0.6.8"]
-            [lein-figwheel "0.5.0-6"]
-            [lein-cljsbuild "1.1.2" :exclusions [[org.clojure/clojure]]]]
+  :plugins [[lein-cljsbuild "1.1.5" :exclusions [[org.clojure/clojure]]]
+            [lein-figwheel "0.5.9"]]
 
   :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
 
   :jar-exclusions [#"\.swp|\.swo|\.DS_Store"]
+
   :profiles {:uberjar {:aot :all}
-             :dev {:plugins [[lein-cljsbuild "1.1.2"]
-                             [org.clojure/clojurescript "1.7.228"]]}
-             :cljs {:plugins [[lein-cljsbuild "1.1.2"]] }}
+             :dev {:plugins [[lein-cljsbuild "1.1.5"]
+                             [org.clojure/clojurescript "1.9.495"]]
+                   :dependencies [[com.cemerick/piggieback "0.2.1"]
+                                  [figwheel-sidecar "0.5.9"]]
+                   :repl-options {:nrepl-middleware
+                                  [cemerick.piggieback/wrap-cljs-repl]}}
+             :cljs {:plugins [[lein-cljsbuild "1.1.5"]] }}
 
   :source-paths ["src/clj" "src/cljc"]
 
